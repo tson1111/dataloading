@@ -18,6 +18,7 @@
 package org.apache.spark.sql.execution
 
 import scala.collection.mutable.ArrayBuffer
+import scala.io.Source
 
 import org.apache.commons.lang3.StringUtils
 import org.apache.hadoop.fs.{BlockLocation, FileStatus, LocatedFileStatus, Path}
@@ -347,7 +348,17 @@ case class FileSourceScanExec(
       val numOutputRows = longMetric("numOutputRows")
       val location = sqlContext.conf.getConf(SQLConf.QUERY_BIT_VECTOR).getOrElse("default location")
       // read bit vector into the
-      val bitVector = new Array[Int](10)
+      val bitVector = new Array[Int](6685900)
+      val source = Source.fromFile(location, "UTF-8")
+      var i = 0;
+      for (c <- source) {
+        if (c == '1') {
+          bitVector(i) = 0
+        } else {
+          bitVector(i) = 1
+        }
+        i += 1
+      }
       var numRows = -1
 
       if (needsUnsafeRowConversion) {

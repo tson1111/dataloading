@@ -32,7 +32,7 @@ object SQLDataSourceExample {
       .builder()
       .appName("Spark SQL data sources example")
       .config("spark.sql.parquet.enableVectorizedReader", "false")
-      .config(SQLConf.QUERY_BIT_VECTOR.key, "location to the bitvector")
+      .config(SQLConf.QUERY_BIT_VECTOR.key, "/mnt/data/bitvecq1")
       .getOrCreate()
 
     // runBasicDataSourceExample(spark)
@@ -100,14 +100,14 @@ object SQLDataSourceExample {
 
     // Read in the parquet file created above
     // Parquet files are self-describing so the schema is preserved
-    // The result of loading a Parquet file is also a DataFrame
-    val parquetFileDF = spark.read.parquet("people.parquet")
-
-    val result = parquetFileDF.filter($"age" >= 13 and $"age" <=19)
-      .groupBy($"name")
-      .agg(sum($"age") as "age_sum")
-    // result.explain(true)
-    result.show(false)
+    // The result of loading a Parquet file.
+    val time1 = System.nanoTime()
+    val parquetFileDF = spark.read.parquet("/mnt/data/review.parquet")
+    val result = parquetFileDF.filter($"stars" >= 2.5).count()
+    val time2 = System.nanoTime()
+    // scalastyle:off println
+    println(time2-time1)
+    // scalastyle:on println
 
     // Parquet files can also be used to create a temporary view and then used in SQL statements
     // parquetFileDF.createOrReplaceTempView("parquetFile")

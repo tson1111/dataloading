@@ -3365,6 +3365,10 @@ class Dataset[T] private[sql](
         action(qe.executedPlan)
       }
       val end = System.nanoTime()
+      // scalastyle:off println
+      println("WithAction")
+      println(end-start)
+      // scalastyle:on println
       sparkSession.listenerManager.onSuccess(name, qe, end - start)
       result
     } catch {
