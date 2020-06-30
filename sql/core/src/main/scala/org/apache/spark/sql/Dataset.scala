@@ -17,7 +17,7 @@
 
 package org.apache.spark.sql
 
-import java.io.CharArrayWriter
+import java.io._
 import java.sql.{Date, Timestamp}
 
 import scala.collection.JavaConverters._
@@ -3364,11 +3364,11 @@ class Dataset[T] private[sql](
       val result = SQLExecution.withNewExecutionId(sparkSession, qe) {
         action(qe.executedPlan)
       }
-      val end = System.nanoTime()
-      // scalastyle:off println
-      println("WithAction")
-      println(end-start)
-      // scalastyle:on println
+      val end = System.nanoTime() - start
+      val writer = new FileWriter("test", true)
+      writer.write(end.toString)
+      writer.write(",")
+      writer.close()
       sparkSession.listenerManager.onSuccess(name, qe, end - start)
       result
     } catch {

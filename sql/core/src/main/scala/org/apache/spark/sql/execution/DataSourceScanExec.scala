@@ -17,6 +17,8 @@
 
 package org.apache.spark.sql.execution
 
+import java.io._
+
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 
@@ -348,19 +350,18 @@ case class FileSourceScanExec(
       val numOutputRows = longMetric("numOutputRows")
       val location = sqlContext.conf.getConf(SQLConf.QUERY_BIT_VECTOR).getOrElse("default location")
       // read bit vector into the
-      val bitVector = new Array[Int](6685900)
-      val source = Source.fromFile(location, "UTF-8")
-      var i = 0;
-      for (c <- source) {
-        if (c == '1') {
-          bitVector(i) = 0
-        } else {
-          bitVector(i) = 1
-        }
-        i += 1
-      }
+      val start_time = System.nanoTime()
+      val file = new File(location)
+      val in = new FileInputStream(file)
+      val bytes = new Array[Byte](file.length.toInt)
+      in.read(bytes)
+      in.close()
+      val end_time = System.nanoTime() - start_time
       var numRows = -1
-
+      val fw = new FileWriter("test", true)
+      fw.write(end_time.toString)
+      fw.write(",")
+      fw.close()
       if (needsUnsafeRowConversion) {
         inputRDD.mapPartitionsWithIndexInternal { (index, iter) =>
           val proj = UnsafeProjection.create(schema)
@@ -376,7 +377,7 @@ case class FileSourceScanExec(
           r
         }.filter(_ => {
           numRows += 1
-          bitVector(numRows) == 0
+          (bytes(numRows/8) & (1 << ( 8 - (numRows%8)))) != 0
         })
       }
     }

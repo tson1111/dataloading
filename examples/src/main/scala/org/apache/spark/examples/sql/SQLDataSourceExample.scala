@@ -16,6 +16,7 @@
  */
 package org.apache.spark.examples.sql
 
+import java.io._
 import java.util.Properties
 
 import org.apache.spark.sql.SparkSession
@@ -32,17 +33,58 @@ object SQLDataSourceExample {
       .builder()
       .appName("Spark SQL data sources example")
       .config("spark.sql.parquet.enableVectorizedReader", "false")
-      .config(SQLConf.QUERY_BIT_VECTOR.key, "/mnt/data/bitvecq1")
+      .config(SQLConf.QUERY_BIT_VECTOR.key, "/mnt/data/bv6")
       .getOrCreate()
 
     // runBasicDataSourceExample(spark)
-    runBasicParquetExample(spark)
+    q6(spark)
+    // q2(spark)
+    // q3(spark)
+    // q4(spark)
+    // q5(spark)
+    // q6(spark)
     // runParquetSchemaMergingExample(spark)
     // runJsonDatasetExample(spark)
     // runJdbcDatasetExample(spark)
 
     spark.stop()
   }
+
+  private def warm(spark: SparkSession): Unit = {
+    import spark.implicits._
+    val time1 = System.currentTimeMillis()
+    val df = spark.read
+      .parquet("/home/congding/test/parquet_cpp.parquet")
+
+    val res = df.filter($"cool" === 7).count()
+    // scalastyle:off println
+    System.out.println(res)
+    val time2 = System.currentTimeMillis()
+    System.out.println(time2-time1)
+    // scalastyle:on println
+  }
+
+
+  private def q6(spark: SparkSession): Unit = {
+    import spark.implicits._
+    val time1 = System.nanoTime()
+    val df = spark.read
+      .parquet("/mnt/data/b2.parquet")
+
+    val res = df
+      .filter(df("date") contains "-10-")
+      .filter(df("user_id")==="DK57YibC5ShBmqQl97CKog")
+      .count()
+    // scalastyle:off println
+    System.out.println(res)
+    // scalastyle:on println
+    val time2 = System.nanoTime() - time1
+    val fw = new FileWriter("test", true)
+    fw.write(time2.toString)
+    fw.write(",")
+    fw.close()
+  }
+
 
   private def runBasicDataSourceExample(spark: SparkSession): Unit = {
     // $example on:generic_load_save_functions$
@@ -93,26 +135,20 @@ object SQLDataSourceExample {
     // Encoders for most common types are automatically provided by importing spark.implicits._
     import spark.implicits._
 
-    // val peopleDF = spark.read.json("/home/totemtang/sqp/test-scripts/parquet_test/people.json")
+    val peopleDF = spark.read.json("examples/src/main/resources/people.json")
 
     // DataFrames can be saved as Parquet files, maintaining the schema information
-    // peopleDF.write.parquet("people.parquet")
+    peopleDF.write.parquet("people.parquet")
 
     // Read in the parquet file created above
     // Parquet files are self-describing so the schema is preserved
-    // The result of loading a Parquet file.
-    val time1 = System.nanoTime()
-    val parquetFileDF = spark.read.parquet("/mnt/data/review.parquet")
-    val result = parquetFileDF.filter($"stars" >= 2.5).count()
-    val time2 = System.nanoTime()
-    // scalastyle:off println
-    println(time2-time1)
-    // scalastyle:on println
+    // The result of loading a Parquet file is also a DataFrame
+    val parquetFileDF = spark.read.parquet("people.parquet")
 
     // Parquet files can also be used to create a temporary view and then used in SQL statements
-    // parquetFileDF.createOrReplaceTempView("parquetFile")
-    // val namesDF = spark.sql("SELECT name FROM parquetFile WHERE age BETWEEN 13 AND 19")
-    // namesDF.map(attributes => "Name: " + attributes(0)).show()
+    parquetFileDF.createOrReplaceTempView("parquetFile")
+    val namesDF = spark.sql("SELECT name FROM parquetFile WHERE age BETWEEN 13 AND 19")
+    namesDF.map(attributes => "Name: " + attributes(0)).show()
     // +------------+
     // |       value|
     // +------------+
