@@ -6,6 +6,9 @@ libraryDependencies += "com.puppycrawl.tools" % "checkstyle" % "8.2"
 // checkstyle uses guava 23.0.
 libraryDependencies += "com.google.guava" % "guava" % "23.0"
 
+// Add Roaring Bitmap for Data Loader
+libraryDependencies += "org.roaringbitmap" % "RoaringBitmap" % "0.9.0"
+
 // need to make changes to uptake sbt 1.0 support in "com.eed3si9n" % "sbt-assembly" % "1.14.5"
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.11.2")
 

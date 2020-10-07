@@ -19,11 +19,11 @@ package org.apache.spark.sql.execution
 
 import java.io._
 
-import scala.collection.mutable.ArrayBuffer
-import scala.io.Source
-
 import org.apache.commons.lang3.StringUtils
 import org.apache.hadoop.fs.{BlockLocation, FileStatus, LocatedFileStatus, Path}
+import org.roaringbitmap.RoaringBitmap
+import scala.collection.mutable.ArrayBuffer
+import scala.io.Source
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
@@ -41,6 +41,7 @@ import org.apache.spark.sql.sources.{BaseRelation, Filter}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.util.Utils
 import org.apache.spark.util.collection.BitSet
+
 
 trait DataSourceScanExec extends LeafExecNode with CodegenSupport {
   val relation: BaseRelation
@@ -349,15 +350,17 @@ case class FileSourceScanExec(
     } else {
       val numOutputRows = longMetric("numOutputRows")
       val location = sqlContext.conf.getConf(SQLConf.QUERY_BIT_VECTOR).getOrElse("default location")
-      // read bit vector into the
+      // read bit vector
       val start_time = System.nanoTime()
       val file = new File(location)
-      val in = new FileInputStream(file)
-      val bytes = new Array[Byte](file.length.toInt)
-      in.read(bytes)
+      val inFile = new FileInputStream(file)
+      val in = new DataInputStream(inFile)
+      val bv = new RoaringBitmap()
+      bv.deserialize(in)
+      println(bv.getCardinality())
       in.close()
       val end_time = System.nanoTime() - start_time
-      var numRows = -1
+      var numRows = 0
       val fw = new FileWriter("test", true)
       fw.write(end_time.toString)
       fw.write(",")
@@ -377,7 +380,8 @@ case class FileSourceScanExec(
           r
         }.filter(_ => {
           numRows += 1
-          (bytes(numRows/8) & (1 << ( 8 - (numRows%8)))) != 0
+          // (bytes(numRows/8) & (1 << ( 8 - (numRows%8)))) != 0
+          bv.contains(numRows)
         })
       }
     }
